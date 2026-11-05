@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Iris Look-to-Pay · live prototype</title>
+<meta name="description" content="The 2023 Iris Look-to-Pay prototype running in your browser: enrol an eye, then verify it with HOG features, PCA and cosine similarity. Nothing leaves the page.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&family=IBM+Plex+Mono:wght@400;500&family=Pixelify+Sans:wght@500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 11' shape-rendering='crispEdges'%3E%3Cpath fill='%23fff' d='M2 2h6v7H2z'/%3E%3Cpath fill='%23141414' d='M2 0h6v2H2zM0 2h2v7H0zM8 2h2v7H8zM2 9h6v2H2z'/%3E%3Cpath fill='%232747D0' d='M4 3h2v1h1v3h-1v1H4V7H3V4h1z'/%3E%3Cpath fill='%23141414' d='M4 4h2v2H4z'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./" aria-label="Iris Look-to-Pay"><span class="wm">Iris L<svg class="eye" viewBox="0 0 10 11" shape-rendering="crispEdges" aria-hidden="true"><path fill="#fff" d="M2 2h6v7H2z"/><path fill="currentColor" d="M2 0h6v2H2zM0 2h2v7H0zM8 2h2v7H8zM2 9h6v2H2z"/><path fill="#2747D0" d="M4 3h2v1h1v3h-1v1H4V7H3V4h1z"/><path fill="#141414" d="M4 4h2v2H4z"/><path fill="#fff" d="M5 4h1v1H5z"/></svg><svg class="eye" viewBox="0 0 10 11" shape-rendering="crispEdges" aria-hidden="true"><path fill="#fff" d="M2 2h6v7H2z"/><path fill="currentColor" d="M2 0h6v2H2zM0 2h2v7H0zM8 2h2v7H8zM2 9h6v2H2z"/><path fill="#2747D0" d="M4 3h2v1h1v3h-1v1H4V7H3V4h1z"/><path fill="#141414" d="M4 4h2v2H4z"/><path fill="#fff" d="M5 4h1v1H5z"/></svg>k-to-Pay</span></a>
+  <p class="tag">The 2023 prototype, running in your browser</p>
+  <nav class="links"><a href="https://github.com/donganh1409/iris_project" target="_blank" rel="noopener">Code on GitHub</a></nav>
+</header>
+
+<main class="app">
+  <section class="lens card" aria-label="Lens">
+    <div class="stage" id="stage">
+      <video id="video" playsinline muted hidden></video>
+      <canvas id="photo" aria-label="Current photo"></canvas>
+      <div class="guide" aria-hidden="true"><i></i></div>
+      <div class="empty" id="empty"><p class="e-h">Choose an eye to look at</p><p class="e-s">Use a sample, upload a close-up, or turn on your camera.</p></div>
+      <div class="scan" id="scan" aria-hidden="true"></div>
+    </div>
+    <div class="sources" role="group" aria-label="Photo source">
+      <div class="samples" id="samples"></div>
+      <div class="src-btns">
+        <label class="btn ghost" for="file">Upload<input id="file" type="file" accept="image/*" hidden></label>
+        <button class="btn ghost" id="cam" type="button" aria-pressed="false">Camera</button>
+        <button class="btn ink" id="snap" type="button" hidden>Take photo</button>
+      </div>
+    </div>
+    <p class="fine">Everything runs inside this page. Photos are never stored or sent anywhere; an enrolled eye is kept only as its 1,764 numbers, in this browser.</p>
+  </section>
+
+  <section class="side">
+    <div class="tabs" role="tablist" aria-label="Mode">
+      <button role="tab" id="t-verify" aria-selected="true" aria-controls="p-verify">Verify</button>
+      <button role="tab" id="t-enrol" aria-selected="false" aria-controls="p-enrol" tabindex="-1">Enrol</button>
+      <button role="tab" id="t-people" aria-selected="false" aria-controls="p-people" tabindex="-1">Identities <b id="count">0</b></button>
+    </div>
+
+    <div class="panel card" id="p-verify" role="tabpanel" aria-labelledby="t-verify">
+      <div class="pay" id="pay">
+        <div class="merchant"><span class="qr" aria-hidden="true"></span><div><p class="m-n">Cà phê Hạt</p><p class="m-a">45.000 ₫</p></div></div>
+        <label class="switch"><input type="checkbox" id="paymode" checked><span></span>Pay with this look</label>
+      </div>
+      <div class="result" id="result" data-state="idle" aria-live="polite">
+        <p class="r-h" id="r-h">Ready when you are</p>
+        <p class="r-s" id="r-s">Pick an eye on the left, then press Verify.</p>
+      </div>
+      <button class="btn big ink" id="go" type="button" disabled>Verify</button>
+      <div class="scores" id="scores" hidden>
+        <p class="lbl">Similarity to each enrolled eye <span id="line-l"></span></p>
+        <ol id="bars"></ol>
+      </div>
+    </div>
+
+    <div class="panel card" id="p-enrol" role="tabpanel" aria-labelledby="t-enrol" hidden>
+      <p class="p-h">Enrol a new eye</p>
+      <p class="p-s">Uses the photo on the left. Only its features are saved.</p>
+      <label class="field"><span>Name or ID</span><input id="name" maxlength="40" autocomplete="off" placeholder="e.g. Linh"></label>
+      <button class="btn big ink" id="save" type="button" disabled>Save identity</button>
+      <p class="note" id="enrol-msg" aria-live="polite"></p>
+    </div>
+
+    <div class="panel card" id="p-people" role="tabpanel" aria-labelledby="t-people" hidden>
+      <p class="p-h">Enrolled identities</p>
+      <ul class="people" id="people"></ul>
+      <button class="btn ghost sm" id="restore" type="button">Restore the repository's three identities</button>
+    </div>
+
+    <details class="card how" id="how" open>
+      <summary>How it decides <span class="mini" id="model-l"></span></summary>
+      <div class="pipe">
+        <figure><canvas id="c-photo" width="96" height="96"></canvas><figcaption>Photo</figcaption></figure>
+        <figure><canvas id="c-gray" width="128" height="128"></canvas><figcaption>Grey, 128 × 128</figcaption></figure>
+        <figure><canvas id="c-hog" width="128" height="128"></canvas><figcaption>Edge directions (HOG)</figcaption></figure>
+        <figure class="nums"><div id="c-nums"><span>–</span></div><figcaption id="nums-cap">3 numbers (PCA)</figcaption></figure>
+      </div>
+      <div class="model">
+        <div class="seg" role="radiogroup" aria-label="Model">
+          <label><input type="radio" name="model" value="pca" checked><span><b>Repository model</b><em>HOG → PCA to 3 numbers → cosine</em></span></label>
+          <label><input type="radio" name="model" value="hog"><span><b>Edge features only</b><em>HOG → cosine, no PCA</em></span></label>
+        </div>
+        <label class="thr"><span>Match line <b id="thr-v">0.70</b></span><input type="range" id="thr" min="0.5" max="0.99" step="0.01" value="0.70"></label>
+        <p class="note" id="model-note">The PCA in models/pca_model.joblib was fitted on three photos, so it can only spread eyes along two directions. Strangers can pass. Switch to edge features to see the difference.</p>
+      </div>
+    </details>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>Iris Look-to-Pay by <a href="https://github.com/donganh1409" target="_blank" rel="noopener">Dong Anh Nguyen</a>, 2023. A concept: the glasses, the café and the payment are imagined. The comparison is the repository's real pipeline, ported from Python.</p>
+</footer>
+<script type="module" src="app.js"></script>
+</body>
+</html>

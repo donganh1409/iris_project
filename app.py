@@ -40,7 +40,7 @@ if database:
             if os.path.exists(img_path):
                 os.remove(img_path)
             dump(database, DB_PATH)
-            st.experimental_rerun()
+            st.rerun()
 else:
     st.sidebar.markdown("ℹ️ No identities yet.")
 
@@ -131,4 +131,4 @@ elif page == "🗂 Show All Identities":
                 if os.path.exists(img_path):
                     os.remove(img_path)
                 dump(database, DB_PATH)
-                st.experimental_rerun()
+                st.rerun()
