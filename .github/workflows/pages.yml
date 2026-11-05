@@ -1,0 +1,33 @@
+name: Publish docs to GitHub Pages
+
+# GitHub Pages serves the gh-pages branch. This copies docs/ from main onto it
+# whenever docs/ changes, so the live site always matches main.
+on:
+  push:
+    branches: [main]
+    paths: ["docs/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Commit docs/ to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          tree=$(git rev-parse HEAD:docs)
+          parent=$(git rev-parse -q --verify origin/gh-pages || true)
+          if [ -n "$parent" ] && [ "$(git rev-parse "$parent^{tree}")" = "$tree" ]; then echo "Already up to date"; exit 0; fi
+          commit=$(git commit-tree "$tree" ${parent:+-p "$parent"} -m "Publish docs/ from ${GITHUB_SHA::7}")
+          git push origin "$commit:refs/heads/gh-pages"

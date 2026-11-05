@@ -70,7 +70,7 @@ train_pca.py               fits the PCA on train_images/
 models/pca_model.joblib    the saved PCA (3 components)
 data/iris_features.joblib  enrolled identities: name -> 3 PCA numbers
 train_images/              A.jpg, B.jpg, C.jpg
-docs/                      the browser version (GitHub Pages)
+docs/                      the browser version (copied to gh-pages for GitHub Pages)
 scripts/                   export the PCA for the web, check the port
 ```
 
